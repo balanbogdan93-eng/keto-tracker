@@ -6,7 +6,7 @@
     "dev": "concurrently \"npm run server\" \"vite --host\"",
     "server": "tsx watch server/index.ts",
     "build": "vite build",
-    "start": "node -r tsx/cjs server/index.ts",
+    "start": "tsx server/index.ts",
     "preview": "vite preview"
   },
   "dependencies": {
