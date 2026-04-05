@@ -1,10 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
-// In production on Railway, DB_PATH points to a persistent volume
-// Locally defaults to the project root
 const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'keto.db');
-
 const db = new Database(dbPath);
 
 db.pragma('journal_mode = WAL');
@@ -46,6 +43,14 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS weight (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    time_of_day TEXT NOT NULL,
+    kg REAL NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS user_stats (
     id INTEGER PRIMARY KEY DEFAULT 1,
     xp INTEGER DEFAULT 0,
@@ -55,5 +60,8 @@ db.exec(`
     badges TEXT DEFAULT '[]'
   );
 `);
+
+// Migrations — add new columns to existing tables safely
+try { db.exec('ALTER TABLE ketones ADD COLUMN glucose REAL'); } catch {}
 
 export default db;

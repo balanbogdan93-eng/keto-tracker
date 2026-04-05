@@ -29,7 +29,16 @@ export interface Ketone {
   date: string;
   time: string;
   level: number;
+  glucose?: number | null; // mg/dL
   notes?: string;
+  created_at: string;
+}
+
+export interface WeightEntry {
+  id: number;
+  date: string;
+  time_of_day: 'morning' | 'noon' | 'night';
+  kg: number;
   created_at: string;
 }
 
@@ -39,7 +48,7 @@ export interface UserStats {
   level: number;
   streak_days: number;
   last_log_date?: string;
-  badges: string; // JSON array string
+  badges: string;
 }
 
 export interface MacroResult {

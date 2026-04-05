@@ -6,6 +6,7 @@ import mealsRouter from './routes/meals';
 import exerciseRouter from './routes/exercise';
 import ketonesRouter from './routes/ketones';
 import aiRouter from './routes/ai';
+import weightRouter from './routes/weight';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,6 +26,7 @@ app.use('/api/meals', mealsRouter);
 app.use('/api/exercise', exerciseRouter);
 app.use('/api/ketones', ketonesRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/weight', weightRouter);
 
 app.get('/api/stats', (req, res) => {
   const stats = db.prepare('SELECT * FROM user_stats WHERE id = 1').get();

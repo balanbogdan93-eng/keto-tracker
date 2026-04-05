@@ -36,6 +36,7 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
     date: selectedDate || new Date().toISOString().split('T')[0],
     time: new Date().toTimeString().slice(0, 5),
     level: '',
+    glucose: '',
     notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -66,6 +67,7 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
     if (isNaN(level) || level < 0) { toast.error('Please enter a valid ketone level'); return; }
     setSubmitting(true);
     try {
+      const glucoseVal = form.glucose ? parseFloat(form.glucose) : null;
       const res = await fetch('/api/ketones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,6 +75,7 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
           date: form.date,
           time: form.time,
           level,
+          glucose: glucoseVal,
           notes: form.notes || null,
         }),
       });
@@ -80,7 +83,7 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
       const status = getKetoneStatus(level);
       toast.success(`🩸 ${level} mmol/L logged! +${data.xp_gained} XP`);
       setShowForm(false);
-      setForm({ date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0, 5), level: '', notes: '' });
+      setForm({ date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0, 5), level: '', glucose: '', notes: '' });
       fetchKetones();
       onLogged();
     } catch {
@@ -98,6 +101,19 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
 
   const latestReading = ketones.length > 0 ? ketones[ketones.length - 1] : null;
   const latestStatus = latestReading ? getKetoneStatus(latestReading.level) : null;
+
+  const calcGKI = (glucoseMgdl: number | null | undefined, ketoneMmol: number) => {
+    if (!glucoseMgdl || !ketoneMmol) return null;
+    const glucoseMmol = glucoseMgdl / 18.0182;
+    return glucoseMmol / ketoneMmol;
+  };
+  const gkiLabel = (gki: number) => {
+    if (gki < 1) return { label: 'Therapeutic Zone', color: '#7c3aed' };
+    if (gki < 3) return { label: 'High Ketosis', color: '#10b981' };
+    if (gki < 6) return { label: 'Moderate Ketosis', color: '#f59e0b' };
+    if (gki < 9) return { label: 'Low Ketosis', color: '#f97316' };
+    return { label: 'Not Ketogenic', color: '#ef4444' };
+  };
 
   const getLineColor = (value: number) => {
     if (value < 0.5) return '#ef4444';
@@ -132,7 +148,10 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
             <div>
               <p className="text-xs text-gray-500 mb-1">Latest Reading</p>
               <p className="text-5xl font-black text-white">{latestReading.level.toFixed(1)}</p>
-              <p className="text-sm text-gray-400 mt-1">mmol/L</p>
+              <p className="text-sm text-gray-400 mt-1">mmol/L ketones</p>
+              {latestReading.glucose && (
+                <p className="text-sm text-gray-400 mt-0.5">{latestReading.glucose} mg/dL glucose</p>
+              )}
             </div>
             <div className="text-right">
               <div className="inline-flex px-4 py-2 rounded-xl text-sm font-semibold mb-2"
@@ -140,6 +159,18 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
                 {latestStatus.label}
               </div>
               <p className="text-xs text-gray-500">{latestReading.date} at {latestReading.time}</p>
+              {(() => {
+                const gki = calcGKI(latestReading.glucose, latestReading.level);
+                if (gki === null) return null;
+                const info = gkiLabel(gki);
+                return (
+                  <div className="mt-2 bg-[#0d0d15] rounded-xl px-3 py-2">
+                    <p className="text-xs text-gray-500">GKI Index</p>
+                    <p className="text-2xl font-black" style={{ color: info.color }}>{gki.toFixed(1)}</p>
+                    <p className="text-xs font-medium" style={{ color: info.color }}>{info.label}</p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
           {/* Zones guide */}
@@ -220,24 +251,45 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
                 />
               </div>
             </div>
-            <div className="mb-3">
-              <label className="text-xs font-medium text-blue-400 mb-1 block">Ketone Level (mmol/L)</label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                placeholder="e.g. 1.8"
-                value={form.level}
-                onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
-                className="w-full bg-[#0d0d15] border border-[#2d2d44] rounded-xl px-4 py-3 text-white text-xl font-bold focus:outline-none focus:border-blue-600/60"
-              />
-              {form.level && !isNaN(parseFloat(form.level)) && (
-                <p className="text-xs mt-1.5 font-medium" style={{ color: getKetoneStatus(parseFloat(form.level)).color }}>
-                  {getKetoneStatus(parseFloat(form.level)).label}
-                  {parseFloat(form.level) >= 1.5 && parseFloat(form.level) <= 3.0 && ' +20 bonus XP!'}
-                </p>
-              )}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="text-xs font-medium text-blue-400 mb-1 block">Ketones (mmol/L)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="10"
+                  placeholder="e.g. 1.8"
+                  value={form.level}
+                  onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
+                  className="w-full bg-[#0d0d15] border border-[#2d2d44] rounded-xl px-4 py-3 text-white text-xl font-bold focus:outline-none focus:border-blue-600/60"
+                />
+                {form.level && !isNaN(parseFloat(form.level)) && (
+                  <p className="text-xs mt-1.5 font-medium" style={{ color: getKetoneStatus(parseFloat(form.level)).color }}>
+                    {getKetoneStatus(parseFloat(form.level)).label}
+                    {parseFloat(form.level) >= 1.5 && parseFloat(form.level) <= 3.0 && ' +20 bonus XP!'}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-red-400 mb-1 block">Blood Glucose (mg/dL)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="600"
+                  placeholder="e.g. 85"
+                  value={form.glucose}
+                  onChange={e => setForm(f => ({ ...f, glucose: e.target.value }))}
+                  className="w-full bg-[#0d0d15] border border-[#2d2d44] rounded-xl px-4 py-3 text-white text-xl font-bold focus:outline-none focus:border-red-600/60"
+                />
+                {form.glucose && form.level && !isNaN(parseFloat(form.glucose)) && !isNaN(parseFloat(form.level)) && parseFloat(form.level) > 0 && (() => {
+                  const gki = calcGKI(parseFloat(form.glucose), parseFloat(form.level));
+                  if (!gki) return null;
+                  const info = gkiLabel(gki);
+                  return <p className="text-xs mt-1.5 font-medium" style={{ color: info.color }}>GKI: {gki.toFixed(1)} — {info.label}</p>;
+                })()}
+              </div>
             </div>
             <textarea
               placeholder="Notes (optional)"
@@ -303,10 +355,21 @@ export default function KetoneLog({ onLogged, selectedDate, onDateChange }: Keto
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                        style={{ background: status.bg, color: status.color }}>
-                        {k.level.toFixed(1)} mmol/L
-                      </span>
+                      <div className="text-right">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                          style={{ background: status.bg, color: status.color }}>
+                          {k.level.toFixed(1)} mmol/L
+                        </span>
+                        {k.glucose && (
+                          <p className="text-xs text-gray-500 mt-1">{k.glucose} mg/dL</p>
+                        )}
+                        {(() => {
+                          const gki = calcGKI(k.glucose, k.level);
+                          if (!gki) return null;
+                          const info = gkiLabel(gki);
+                          return <p className="text-xs font-medium" style={{ color: info.color }}>GKI {gki.toFixed(1)}</p>;
+                        })()}
+                      </div>
                       <button
                         onClick={() => deleteKetone(k.id)}
                         className="text-gray-600 hover:text-red-400 transition-colors p-1"

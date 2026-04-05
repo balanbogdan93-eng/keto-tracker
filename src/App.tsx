@@ -6,9 +6,10 @@ import CalendarView from './components/CalendarView';
 import MealLog from './components/MealLog';
 import ExerciseLog from './components/ExerciseLog';
 import KetoneLog from './components/KetoneLog';
+import WeightLog from './components/WeightLog';
 import Badges from './components/Badges';
 
-export type Page = 'dashboard' | 'calendar' | 'meals' | 'exercise' | 'ketones' | 'badges';
+export type Page = 'dashboard' | 'calendar' | 'meals' | 'exercise' | 'ketones' | 'weight' | 'badges';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -59,6 +60,9 @@ export default function App() {
         )}
         {page === 'ketones' && (
           <KetoneLog onLogged={refreshStats} selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        )}
+        {page === 'weight' && (
+          <WeightLog onLogged={refreshStats} selectedDate={selectedDate} onDateChange={setSelectedDate} />
         )}
         {page === 'badges' && <Badges />}
       </Layout>

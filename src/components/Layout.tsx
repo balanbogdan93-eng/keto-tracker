@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Home, Calendar, UtensilsCrossed, Dumbbell, Droplets, Award, Zap
+  Home, Calendar, UtensilsCrossed, Dumbbell, Droplets, Award, Zap, Scale
 } from 'lucide-react';
 import { Page } from '../App';
 import { UserStats } from '../types';
@@ -16,10 +16,11 @@ interface LayoutProps {
 
 const NAV_ITEMS: { id: Page; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <Home size={20} /> },
-  { id: 'calendar', label: 'Calendar', icon: <Calendar size={20} /> },
   { id: 'meals', label: 'Meals', icon: <UtensilsCrossed size={20} /> },
   { id: 'exercise', label: 'Exercise', icon: <Dumbbell size={20} /> },
   { id: 'ketones', label: 'Ketones', icon: <Droplets size={20} /> },
+  { id: 'weight', label: 'Weight', icon: <Scale size={20} /> },
+  { id: 'calendar', label: 'Calendar', icon: <Calendar size={20} /> },
   { id: 'badges', label: 'Badges', icon: <Award size={20} /> },
 ];
 
