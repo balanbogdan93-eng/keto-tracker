@@ -1,6 +1,6 @@
 // KetoTrack Service Worker
-const CACHE = 'ketotrack-v1';
-const OFFLINE_URLS = ['/', '/index.html'];
+const CACHE = 'ketotrack-v2';
+const OFFLINE_URLS = ['./', './index.html'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
